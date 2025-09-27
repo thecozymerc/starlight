@@ -3,7 +3,8 @@ title: CozyMerc
 description: Contract Management | AI Consulting | U.S. Market Entry | Marketing Funnels
 template: splash
 hero:
-  tagline: Helping international businesses win in the U.S. — and creating global pathways for American startups and investors to expand abroad with GTM strategy, contract expertise, AI solutions, and high-converting marketing funnels.
+  tagline: >
+    Helping international businesses win in the U.S. — and creating global pathways for American startups and investors to expand abroad with GTM strategy, contract expertise, AI solutions, and high-converting marketing funnels.
   image:
     html: |
       <img src="/logo4.png"
@@ -25,7 +26,39 @@ hero:
       link: /about/
     - text: Contact
       link: /contact/
-lastUpdated: 2025-09-27
-statusNote: "New pages rolling out weekly."
 ---
 
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<p class="disclaimer">
+  Last updated Sept 27, 2025 — new pages rolling out weekly.
+</p>
+
+## Next steps
+
+<CardGrid stagger>
+  <Card title="Services" href="/services/">
+    Contract management, AI consulting, and GTM playbooks for US market entry.
+  </Card>
+  <Card title="Tools" href="/tools/">
+    Dashboards, calculators, and contract analyzers to speed up ops.
+  </Card>
+  <Card title="Portfolio" href="/portfolio/">
+    Selected work, case studies, and outcomes.
+  </Card>
+</CardGrid>
+
+<style>
+  .disclaimer {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 400 !important; /* prevent bold from theme */
+    opacity: 0.7;
+    margin: .5rem 0 0;
+    line-height: 1.4;
+    color: var(--sl-color-text);
+  }
+  @media (min-width: 768px) {
+    .disclaimer { font-size: 0.75rem; }
+  }
+</style>
