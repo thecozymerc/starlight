@@ -28,11 +28,25 @@ hero:
       link: /contact/
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+<!-- Renders immediately after the hero + buttons -->
+<p class="hero-note">Rollouts in progress.</p>
 
-<p style="display:block;font-size:.8rem;font-weight:400!important;opacity:.75;margin:.5rem 0 0;line-height:1.4;">
-  Rollouts in progress.
-</p>
+<style>
+  /* Keep the note tiny and not bold */
+  .hero-note{
+    display:block;
+    font-size:.8rem;
+    font-weight:400 !important;
+    opacity:.75;
+    margin:.5rem 0 0;
+    line-height:1.4;
+    color: var(--sl-color-text);
+  }
+  /* Tighten the gap between hero and the note (splash template adds spacing) */
+  .starlight-hero + .content .hero-note { margin-top:.25rem; }
+</style>
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
 ## Next steps
 
