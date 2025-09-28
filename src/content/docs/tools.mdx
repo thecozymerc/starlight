@@ -8,8 +8,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 <CardGrid stagger>
   <Card
     title="Dashboards & Calculators"
-    href="/tools/dashboards-calculators/"
     icon="bar-chart"
+    href="/tools/dashboards-calculators/"
     callToAction={{ text: "Open", link: "/tools/dashboards-calculators/" }}
   >
     Design of Experiments, margin guardrails, GTM planning, risk tracking.
@@ -17,10 +17,14 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
   <Card
     title="Contract Analyzer"
-    href="/tools/contract-analyzer/"
     icon="magic"
+    href="/tools/contract-analyzer/"
     callToAction={{ text: "Open", link: "/tools/contract-analyzer/" }}
   >
     AI-assisted risk scan with suggested language and a structured report.
   </Card>
 </CardGrid>
+
+<!-- Plain links as a safety net -->
+- [Dashboards & Calculators](/tools/dashboards-calculators/)
+- [Contract Analyzer](/tools/contract-analyzer/)
