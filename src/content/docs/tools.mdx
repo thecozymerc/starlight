@@ -1,21 +1,26 @@
 ---
 title: Tools
-description: Interactive tools that help you ship deals faster—analyzer, dashboards, and calculators.
+description: Interactive tools and calculators to help you close cleaner deals, faster.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-# Tools
-Use these to speed up reviews and decisions.
-
 <CardGrid stagger>
-
-  <Card title="Contract Analyzer" icon="magic" callToAction={{ text: "Open", link: "/tools/contract-analyzer/" }}>
-    AI-assisted risk scan with redline guidance and a structured risk report.
+  <Card
+    title="Dashboards & Calculators"
+    href="/tools/dashboards-calculators/"
+    icon="bar-chart"
+    callToAction={{ text: "Open", link: "/tools/dashboards-calculators/" }}
+  >
+    Design of Experiments, margin guardrails, GTM planning, risk tracking.
   </Card>
 
-  <Card title="Dashboards & Calculators" icon="bar-chart" callToAction={{ text: "Open", link: "/tools/dashboards-calculators/" }}>
-    Design of Experiments (DoE), margin/discount guardrails, GTM funnel planning, and risk tracking.
+  <Card
+    title="Contract Analyzer"
+    href="/tools/contract-analyzer/"
+    icon="magic"
+    callToAction={{ text: "Open", link: "/tools/contract-analyzer/" }}
+  >
+    AI-assisted risk scan with suggested language and a structured report.
   </Card>
-
 </CardGrid>
