@@ -1,8 +1,8 @@
 /* Replace the header brand text with your logo image */
 :where(header) .site-title {
   display: inline-block;
-  width: 320px;            /* <- adjust as you like */
-  height: 64px;            /* <- adjust as you like */
+  width: 350px;            /* <- adjust as you like */
+  height: 94px;            /* <- adjust as you like */
   background: url('/logo4.png') no-repeat left center;
   background-size: contain;
   color: transparent;      /* hide visible text color */
