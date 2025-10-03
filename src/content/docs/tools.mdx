@@ -3,26 +3,27 @@ title: Tools
 description: Interactive tools and calculators to help you close cleaner deals, faster.
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 <CardGrid>
-  <Card
+  <LinkCard
+    href="/tools/dashboards-calculators/"
     title="Dashboards & Calculators"
     icon="bar-chart"
-    href="/tools/dashboards-calculators/"
   >
     Design of Experiments, margin guardrails, GTM planning, risk tracking.
-  </Card>
+  </LinkCard>
 
-  <Card
+  <LinkCard
+    href="/tools/contract-analyzer/"
     title="Contract Analyzer"
     icon="magic"
-    href="/tools/contract-analyzer/"
   >
     AI-assisted risk scan with suggested language and a structured report.
-  </Card>
+  </LinkCard>
 </CardGrid>
 
+{/* optional safety net links; you can keep or remove */}
 <ul>
   <li><a href="/tools/dashboards-calculators/">Dashboards &amp; Calculators</a></li>
   <li><a href="/tools/contract-analyzer/">Contract Analyzer</a></li>
