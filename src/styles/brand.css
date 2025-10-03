@@ -1,0 +1,23 @@
+/* ===== Replace brand text with your logo and constrain size ===== */
+
+/* Target both common brand anchors Starlight uses */
+.sl-nav-brand,
+header .site-title a {
+  display: inline-block !important;
+  width: 160px;           /* <- tweak width if needed */
+  height: 28px;           /* <- logo height */
+  background: url('/logo4.png') no-repeat left center;
+  background-size: contain;
+  text-indent: -9999px;   /* hide any residual text */
+  overflow: hidden;
+  line-height: 28px;
+}
+
+/* Hide any child nodes Starlight injects (SVG + text span) */
+.sl-nav-brand > *,
+header .site-title a > * {
+  display: none !important;
+}
+
+/* Sometimes Starlight adds padding/gap around brand; tighten it */
+.sl-nav-brand { padding: 0 !important; margin: 0 !important; }
