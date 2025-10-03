@@ -5,8 +5,9 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'CozyMerc'
-      // (No sidebar, no customCss yet — keep it minimal so build succeeds)
+      title: 'CozyMerc',
+      customCss: ['./src/styles/brand.css'], // load our logo CSS
+      sidebar: [], // optional: removes starter sidebar sections
     }),
   ],
 });
