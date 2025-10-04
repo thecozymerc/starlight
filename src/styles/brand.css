@@ -1,26 +1,46 @@
-/* Replace the header brand text with your logo image */
-:where(header) .site-title {
-  display: inline-block;
-  width: 350px;            /* <- adjust as you like */
-  height: 94px;            /* <- adjust as you like */
+/* ===== Header brand: swap text with your logo and constrain size ===== */
+/* Works across Starlight variants */
+:where(header) .site-title,
+:where(.sl-nav-brand) a,
+:where(.sl-logo) .site-title {
+  display: inline-block !important;
+  width: 320px;        /* <- adjust width */
+  height: 64px;        /* <- adjust height */
   background: url('/logo4.png') no-repeat left center;
   background-size: contain;
-  color: transparent;      /* hide visible text color */
-  text-indent: -9999px;    /* move text off-screen (keeps link/SEO) */
+  color: transparent !important;
+  text-indent: -9999px;   /* hide text, keep accessible link */
   overflow: hidden;
-  line-height: 32px;       /* match the height above */
+  line-height: 64px;      /* keep in sync with height */
 }
 
-/* Some Starlight versions inject a span/SVG inside; hide it */
-:where(header) .site-title > * {
+/* Hide any text/SVG that Starlight injects inside the brand node */
+:where(header) .site-title > *,
+:where(.sl-nav-brand) a > *,
+:where(.sl-logo) .site-title > * {
   display: none !important;
 }
 
-/* (Optional) remove the left sidebar completely via CSS too */
-:root { --sl-sidebar-width: 0px; }          /* collapse its reserved space */
-.sl-container aside.sidebar { display: none !important; }
+/* Optional: smaller logo on phones */
+@media (max-width: 640px) {
+  :where(header) .site-title,
+  :where(.sl-nav-brand) a,
+  :where(.sl-logo) .site-title {
+    width: 200px;
+    height: 40px;
+    line-height: 40px;
+  }
+}
 
-/* --- Hide the right-side Table of Contents (site-wide) --- */
+/* ===== Left sidebar: collapse & hide site-wide ===== */
+:root { --sl-sidebar-width: 0px; }
+.sl-container aside.sidebar,
+.sl-sidebar,
+.sl-mobile-nav {
+  display: none !important;
+}
+
+/* ===== Right TOC rail: hide site-wide ===== */
 .right-sidebar,
 .sl-toc-container,
 .sl-toc,
@@ -29,3 +49,6 @@
 [data-starlight-toc] {
   display: none !important;
 }
+
+/* Optional: let content use full width now that side rails are gone */
+:root { --sl-content-margin-inline: 0; }
