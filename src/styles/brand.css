@@ -19,3 +19,13 @@
 /* (Optional) remove the left sidebar completely via CSS too */
 :root { --sl-sidebar-width: 0px; }          /* collapse its reserved space */
 .sl-container aside.sidebar { display: none !important; }
+
+/* --- Hide the right-side Table of Contents (site-wide) --- */
+.right-sidebar,
+.sl-toc-container,
+.sl-toc,
+.sl-toc-toggle,
+.toc-toggle,
+[data-starlight-toc] {
+  display: none !important;
+}
