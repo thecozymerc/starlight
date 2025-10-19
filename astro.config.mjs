@@ -6,8 +6,12 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'CozyMerc',
-      sidebar: [],                           // remove starter left-nav groups
-      customCss: ['./src/styles/brand.css'], // load our CSS (logo + hide sidebars)
-    }),
-  ],
+      sidebar: [],                           // keep sidebar empty
+      customCss: ['./src/styles/brand.css'], // your branding CSS
+      components: {
+        // use our sitewide legal banner everywhere
+        Banner: './src/components/SitewideBanner.astro'
+      }
+    })
+  ]
 });
