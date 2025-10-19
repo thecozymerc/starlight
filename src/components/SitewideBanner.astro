@@ -1,0 +1,42 @@
+---
+import Default from '@astrojs/starlight/components/Banner.astro';
+---
+// Keep Starlight's per-page banner (if any) + add our legal banner
+<Default />
+
+<div id="legal-banner" class="legal-banner">
+  <span><strong>Heads up:</strong> Contract insights, not legal advice.
+  Remove sensitive info before upload. Files auto-delete within 24 hours.</span>
+  <a href="/terms" class="legal-link">Terms</a>
+  <span aria-hidden="true">·</span>
+  <a href="/privacy" class="legal-link">Privacy</a>
+  <button id="legal-banner-close" aria-label="Dismiss">✕</button>
+</div>
+
+<style>
+.legal-banner{
+  position:sticky; top:0; z-index:1000;
+  display:flex; gap:.75rem; align-items:center; justify-content:center;
+  padding:.6rem .9rem; background:#fff7e6; border-bottom:1px solid #ffe0b3;
+  font:500 14px/1.3 system-ui,-apple-system,Segoe UI,Roboto,Arial;
+}
+.legal-link{ text-decoration:underline; }
+#legal-banner-close{ margin-left:.5rem; border:0; background:transparent; cursor:pointer; font-size:14px; }
+</style>
+
+<script is:inline>
+(function () {
+  const key='legalBannerDismissedAt';
+  const sevenDays=7*24*60*60*1000;
+  const t=+localStorage.getItem(key)||0;
+  // Hide if recently dismissed
+  if(Date.now()-t < sevenDays){
+    document.getElementById('legal-banner')?.remove();
+    return;
+  }
+  document.getElementById('legal-banner-close')?.addEventListener('click', () => {
+    localStorage.setItem(key, String(Date.now()));
+    document.getElementById('legal-banner')?.remove();
+  });
+})();
+</script>
