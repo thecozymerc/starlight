@@ -1,0 +1,5 @@
+{
+  "Top reps by deals & avg days to close (closed deals)": "\nSELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days_to_close\nFROM v_won_lost wl\nJOIN reps r ON r.id = wl.rep_id\nGROUP BY r.name\nORDER BY deals DESC, avg_days_to_close ASC;\n",
+  "Win rate by rep (Won / (Won+Lost))": "\nWITH rep_totals AS (\n  SELECT r.name AS rep,\n         SUM(CASE WHEN status='Won' THEN 1 ELSE 0 END) AS won,\n         SUM(CASE WHEN status IN ('Won','Lost') THEN 1 ELSE 0 END) AS attempts\n  FROM opportunities o\n  JOIN reps r ON r.id = o.rep_id\n  GROUP BY r.name\n)\nSELECT rep, won, attempts,\n       CASE WHEN attempts=0 THEN 0.0 ELSE ROUND(1.0*won/attempts,3) END AS win_rate\nFROM rep_totals\nORDER BY win_rate DESC;\n",
+  "Pipeline aging (open opps)": "\nSELECT r.name AS rep, c.segment, COUNT(*) AS open_opps,\n       ROUND(AVG(days_open),1) AS avg_days_open,\n       ROUND(AVG(amount),2) AS avg_amount\nFROM v_open_aging oa\nJOIN reps r ON r.id = oa.rep_id\nJOIN customers c ON c.id = oa.customer_id\nGROUP BY r.name, c.segment\nORDER BY avg_days_open DESC, open_opps DESC;\n"
+}
