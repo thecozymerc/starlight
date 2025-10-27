@@ -36,7 +36,7 @@
 <script src="https://sql.js.org/dist/sql-wasm.js"></script>
 
 <script type="module">
-  const SQL_WASM_CDN = 'https://sql.js.org/dist/';
+  const SQL_WASM_PATH = '/vendor/sqljs/'; // local folder with sql-wasm.wasm
   const DB_URL = '/data/cozymerc_deals.db';
   const Q_URL  = '/data/cozymerc_sql_queries.json';
 
@@ -96,7 +96,7 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
 
   async function initDb(){
     status.textContent='Loading DB…';
-    const SQL = await window.initSqlJs({ locateFile: f => SQL_WASM_CDN + f });
+    const SQL = await window.initSqlJs({ locateFile: f => SQL_WASM_PATH + f });
     const buf = await (await fetch(DB_URL, {cache:'no-store'})).arrayBuffer();
     db = new SQL.Database(new Uint8Array(buf));
     status.textContent='Ready';
