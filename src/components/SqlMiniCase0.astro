@@ -33,19 +33,19 @@
   </div>
 </div>
 
-<!-- tiny sql.js loader (JS only); the .wasm comes from YOUR site -->
-<script src="https://sql.js.org/dist/sql-wasm.js"></script>
-
 <script type="module">
-  const SQL_WASM_PATH = '/vendor/sqljs/';      // local path to sql-wasm.wasm
+  // --- config ---
+  const SQL_WASM_PATH = '/vendor/sqljs/';    // where /vendor/sqljs/sql-wasm.wasm lives
   const DB_URL = '/data/cozymerc_deals.db';
   const Q_URL  = '/data/cozymerc_sql_queries.json';
 
+  // --- dom helpers ---
   const $ = s => document.querySelector(s);
   const picker = $('#picker'), txt = $('#sql'), runBtn = $('#run'),
         resetBtn = $('#reset'), csvBtn = $('#csv'), out = $('#out'),
         status = $('#status'), filter = $('#filter');
 
+  // --- fallback sample queries (if JSON missing) ---
   const FALLBACK = {
     "Top reps by deals & avg days":
 `SELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days
@@ -73,12 +73,23 @@ GROUP BY r.name, c.segment
 ORDER BY avg_days_open DESC, open_opps DESC;`
   };
 
-  let db, last;
+  let db, last, initSqlJs;
+
+  async function ensureInit() {
+    if (initSqlJs) return initSqlJs;
+    // Load the ES module (no globals). Use CDN for JS, local for WASM.
+    const mod = await import('https://sql.js.org/dist/sql-wasm.js');
+    initSqlJs = mod.default || mod.initSqlJs || mod;
+    if (typeof initSqlJs !== 'function') {
+      throw new Error('sql.js loader not found');
+    }
+    return initSqlJs;
+  }
 
   async function loadQueries(){
     try{
       const res = await fetch(Q_URL, {cache:'no-store'});
-      if(!res.ok) throw new Error('queries not found');
+      if(!res.ok) throw new Error('queries.json not found');
       return await res.json();
     }catch(e){
       console.warn('Using fallback queries:', e);
@@ -86,20 +97,32 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     }
   }
 
+  function fillPicker(qs){
+    picker.innerHTML='';
+    Object.keys(qs).forEach(title=>{
+      const o=document.createElement('option'); o.value=title; o.textContent=title;
+      picker.appendChild(o);
+    });
+    txt.value = qs[picker.value];
+  }
+
   async function initDb(){
-    status.textContent = 'Loading DB…';
+    status.textContent='Loading DB…';
     try {
-      // sanity-check that wasm is reachable
+      // Sanity check wasm path
       const head = await fetch(SQL_WASM_PATH + 'sql-wasm.wasm', { method:'HEAD' });
       if (!head.ok) throw new Error('wasm not found at ' + SQL_WASM_PATH + 'sql-wasm.wasm');
 
-      // initialize sql.js using local wasm path
-      const SQL = await window.initSqlJs({ locateFile: f => SQL_WASM_PATH + f });
+      // Init sql.js with local wasm path
+      const init = await ensureInit();
+      const SQL = await init({ locateFile: f => SQL_WASM_PATH + f });
 
-      // fetch DB bytes
-      const buf = await (await fetch(DB_URL, {cache:'no-store'})).arrayBuffer();
+      // Fetch DB bytes
+      const resp = await fetch(DB_URL, {cache:'no-store'});
+      if (!resp.ok) throw new Error('db fetch failed: ' + resp.status);
+      const buf = await resp.arrayBuffer();
 
-      // open DB
+      // Open DB
       db = new SQL.Database(new Uint8Array(buf));
       status.textContent='Ready';
     } catch (e) {
@@ -128,6 +151,7 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
 
   function exec(sql){
     try{
+      if(!db) throw new Error('DB not ready');
       const res = db.exec(sql);
       last = res.length ? res[0] : null;
       render(res);
@@ -155,20 +179,15 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     a.download='query.csv'; a.click(); URL.revokeObjectURL(a.href);
   }
 
+  // ---- boot ----
   (async ()=>{
     const qs = await loadQueries();
-    // populate picker
-    picker.innerHTML='';
-    Object.keys(qs).forEach(title=>{
-      const o=document.createElement('option'); o.value=title; o.textContent=title; picker.appendChild(o);
-    });
-    txt.value = qs[picker.value];
-
+    fillPicker(qs);
     await initDb();
 
     picker.addEventListener('change', ()=>{ txt.value = qs[picker.value]; });
     runBtn.addEventListener('click', ()=>exec(txt.value));
-    resetBtn.addEventListener('click', async ()=>{ try{ db.close(); }catch{} await initDb(); });
+    resetBtn.addEventListener('click', async ()=>{ try{ db?.close(); }catch{} await initDb(); });
     csvBtn.addEventListener('click', downloadCSV);
     filter.addEventListener('input', ()=>{ if(last) render([last]); });
 
