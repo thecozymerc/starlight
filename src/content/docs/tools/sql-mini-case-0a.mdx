@@ -14,4 +14,30 @@ import SqlMiniCase0 from '../../../components/SqlMiniCase0.astro';
 
 This runs **read-only SQL in your browser** against a tiny SQLite file—no server, no secrets.
 
+### How to use (60s)
+1) **Pick a query** from the dropdown.  
+2) **Run** it: click **Run** or press **Ctrl/⌘ + Enter**.  
+3) **Filter rows** with the Filter box.  
+4) **Edit SQL** in the big text area and hit **Run** again.  
+5) **Download CSV** to save the current table.  
+6) **Reset DB** to reload a fresh, read-only copy.
+
+**Notes**
+- Every visitor gets their **own in-memory copy** of `/data/cozymerc_deals.db` (refresh resets changes).  
+- The dropdown loads from `/data/cozymerc_sql_queries.json` (you can add your own).
+
 <SqlMiniCase0 />
+
+### Sample queries (copy/paste)
+Paste these into the editor if you want to tweak by hand.
+
+```sql
+-- Top reps by closed deals & average days to close
+SELECT r.name AS rep,
+       COUNT(*) AS deals,
+       ROUND(AVG(days_to_close),1) AS avg_days_to_close
+FROM v_won_lost wl
+JOIN reps r ON r.id = wl.rep_id
+GROUP BY r.name
+ORDER BY deals DESC, avg_days_to_close ASC;
+
