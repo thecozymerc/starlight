@@ -25,6 +25,16 @@ This runs **read-only SQL in your browser** against a tiny SQLite file—no serv
 **Notes**
 - Every visitor gets their **own in-memory copy** of `/data/cozymerc_deals.db` (refresh resets changes).  
 - The dropdown loads from `/data/cozymerc_sql_queries.json` (you can add your own).
+### Quick filter examples (type these in the Filter box)
+- **Ava** → rows for rep *Ava Chen*
+- **Marcus** → rows for rep *Marcus Lee*
+- **Enterprise** → only Enterprise segment (use with “Pipeline aging” query)
+- **SMB** / **Mid-Market** → segment filters (Pipeline aging)
+- **Negotiation** → stage filter (Pipeline aging if you add stage to your query)
+- **30** → any row containing “30” (e.g., `avg_days_open` ≈ 30)
+- **5000** → rows where `avg_amount` or `amount` shows ~5000
+
+> The Filter is a simple **case-insensitive contains** match across all visible columns (no `>`, `<`, or AND/OR).
 
 <SqlMiniCase0 />
 
