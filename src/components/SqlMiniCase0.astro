@@ -1,5 +1,5 @@
 ---
-/* src/components/SqlMiniCase0.astro — read-only SQLite demo using local sql.js */
+/* src/components/SqlMiniCase0.astro — read-only SQLite demo using a robust sql.js loader */
 ---
 <style>
   .card{max-width:960px;margin:1.25rem auto;padding:1rem;border:1px solid #e5e7eb;border-radius:12px}
@@ -34,17 +34,20 @@
 </div>
 
 <script type="module">
-  // Paths on YOUR site
-  const SQL_WASM_PATH = '/vendor/sqljs/';            // must contain sql-wasm.wasm
-  const SQL_LOADER_URL = '/vendor/sqljs/sql-wasm.js';// your local loader JS
+  // ---- config (paths on YOUR site) ----
+  const SQL_DIR = '/vendor/sqljs/';                      // must contain sql-wasm.wasm
+  const SQL_LOADER_LOCAL = '/vendor/sqljs/sql-wasm.js';  // your local loader JS
+  const SQL_LOADER_CDN   = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js';
   const DB_URL = '/data/cozymerc_deals.db';
   const Q_URL  = '/data/cozymerc_sql_queries.json';
 
+  // ---- dom helpers ----
   const $ = s => document.querySelector(s);
   const picker = $('#picker'), txt = $('#sql'), runBtn = $('#run'),
         resetBtn = $('#reset'), csvBtn = $('#csv'), out = $('#out'),
         status = $('#status'), filter = $('#filter');
 
+  // ---- fallback queries ----
   const FALLBACK = {
     "Top reps by deals & avg days":
 `SELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days
@@ -74,28 +77,47 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
 
   let db, last;
 
-  // Load the sql.js init function robustly
-  async function getInitSqlJs() {
+  // Load the loader in a way that works no matter how it's built.
+  async function loadSqlJsInit() {
+    // 1) Try local ESM import
     try {
-      const mod = await import(SQL_LOADER_URL + `?v=${Date.now()}`); // ESM path
-      const init = mod.default || mod.initSqlJs || mod;
+      const m = await import(`${SQL_LOADER_LOCAL}?v=${Date.now()}`);
+      const init = m?.default || m?.initSqlJs || m;
       if (typeof init === 'function') return init;
-    } catch { /* fall back to global below */ }
-    // some builds expose a global instead
-    const g = (window).initSqlJs || (window).SQL || (window).sqljs;
-    if (typeof g === 'function') return g;
-    if (g && typeof g.default === 'function') return g.default;
+    } catch { /* ignore, try next */ }
+
+    // 2) Try local <script> (UMD global)
+    try {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = `${SQL_LOADER_LOCAL}?v=${Date.now()}`;
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      if (typeof window.initSqlJs === 'function') return window.initSqlJs;
+      if (typeof window.SQL === 'function') return window.SQL; // some builds
+    } catch { /* ignore, try CDN */ }
+
+    // 3) Try CDN <script> (UMD global)
+    try {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = `${SQL_LOADER_CDN}`;
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      if (typeof window.initSqlJs === 'function') return window.initSqlJs;
+      if (typeof window.SQL === 'function') return window.SQL;
+    } catch { /* ignore */ }
+
     throw new Error('sql.js loader not found');
   }
 
   async function loadQueries(){
     try{
       const res = await fetch(Q_URL, {cache:'no-store'});
-      if(!res.ok) throw 0;
-      return await res.json();
-    }catch{
-      return FALLBACK;
-    }
+      if(!res.ok) throw 0; return await res.json();
+    }catch{ return FALLBACK; }
   }
 
   function fillPicker(qs){
@@ -110,21 +132,20 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
   async function initDb(){
     status.textContent='Loading DB…';
     try {
-      // sanity checks
-      const [jsHead, wasmHead] = await Promise.all([
-        fetch(SQL_LOADER_URL, {method:'HEAD'}).then(r=>r.status),
-        fetch(SQL_WASM_PATH + 'sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status),
+      // quick existence checks to give clear errors
+      const [jsHead, wasmHead, dbHead] = await Promise.all([
+        fetch(SQL_LOADER_LOCAL, {method:'HEAD'}).then(r=>r.status).catch(()=>0),
+        fetch(`${SQL_DIR}sql-wasm.wasm`, {method:'HEAD'}).then(r=>r.status).catch(()=>0),
+        fetch(DB_URL, {method:'HEAD'}).then(r=>r.status).catch(()=>0),
       ]);
-      if (jsHead !== 200) throw new Error('loader JS missing at ' + SQL_LOADER_URL);
-      if (wasmHead !== 200) throw new Error('wasm missing at ' + SQL_WASM_PATH + 'sql-wasm.wasm');
+      if (wasmHead !== 200) throw new Error('wasm missing at ' + SQL_DIR + 'sql-wasm.wasm');
+      if (dbHead !== 200)   throw new Error('DB missing at ' + DB_URL + ' (did you commit it under /public/data/?)');
+      if (jsHead !== 200)   console.warn('Local loader JS HEAD not 200; will try CDN fallback.');
 
-      const initSqlJs = await getInitSqlJs();
-      const SQL = await initSqlJs({ locateFile: f => SQL_WASM_PATH + f });
+      const initSqlJs = await loadSqlJsInit();
+      const SQL = await initSqlJs({ locateFile: f => `${SQL_DIR}${f}` });
 
-      const resp = await fetch(DB_URL, {cache:'no-store'});
-      if (!resp.ok) throw new Error('db fetch failed: ' + resp.status);
-      const buf = await resp.arrayBuffer();
-
+      const buf = await (await fetch(DB_URL, {cache:'no-store'})).arrayBuffer();
       db = new SQL.Database(new Uint8Array(buf));
       status.textContent='Ready';
     } catch (e) {
