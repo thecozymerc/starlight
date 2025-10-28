@@ -1,5 +1,5 @@
 ---
-/* src/components/SqlMiniCase0.astro — read-only SQLite demo using local sql.js wasm */
+/* src/components/SqlMiniCase0.astro — read-only SQLite demo using local sql.js */
 ---
 <style>
   .card{max-width:960px;margin:1.25rem auto;padding:1rem;border:1px solid #e5e7eb;border-radius:12px}
@@ -34,18 +34,17 @@
 </div>
 
 <script type="module">
-  // --- config ---
-  const SQL_WASM_PATH = '/vendor/sqljs/';    // where /vendor/sqljs/sql-wasm.wasm lives
+  // Paths on YOUR site
+  const SQL_WASM_PATH = '/vendor/sqljs/';            // must contain sql-wasm.wasm
+  const SQL_LOADER_URL = '/vendor/sqljs/sql-wasm.js';// your local loader JS
   const DB_URL = '/data/cozymerc_deals.db';
   const Q_URL  = '/data/cozymerc_sql_queries.json';
 
-  // --- dom helpers ---
   const $ = s => document.querySelector(s);
   const picker = $('#picker'), txt = $('#sql'), runBtn = $('#run'),
         resetBtn = $('#reset'), csvBtn = $('#csv'), out = $('#out'),
         status = $('#status'), filter = $('#filter');
 
-  // --- fallback sample queries (if JSON missing) ---
   const FALLBACK = {
     "Top reps by deals & avg days":
 `SELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days
@@ -73,26 +72,28 @@ GROUP BY r.name, c.segment
 ORDER BY avg_days_open DESC, open_opps DESC;`
   };
 
-  let db, last, initSqlJs;
+  let db, last;
 
-  async function ensureInit() {
-    if (initSqlJs) return initSqlJs;
-    // Load the ES module (no globals). Use CDN for JS, local for WASM.
-    const mod = await import('https://sql.js.org/dist/sql-wasm.js');
-    initSqlJs = mod.default || mod.initSqlJs || mod;
-    if (typeof initSqlJs !== 'function') {
-      throw new Error('sql.js loader not found');
-    }
-    return initSqlJs;
+  // Load the sql.js init function robustly
+  async function getInitSqlJs() {
+    try {
+      const mod = await import(SQL_LOADER_URL + `?v=${Date.now()}`); // ESM path
+      const init = mod.default || mod.initSqlJs || mod;
+      if (typeof init === 'function') return init;
+    } catch { /* fall back to global below */ }
+    // some builds expose a global instead
+    const g = (window).initSqlJs || (window).SQL || (window).sqljs;
+    if (typeof g === 'function') return g;
+    if (g && typeof g.default === 'function') return g.default;
+    throw new Error('sql.js loader not found');
   }
 
   async function loadQueries(){
     try{
       const res = await fetch(Q_URL, {cache:'no-store'});
-      if(!res.ok) throw new Error('queries.json not found');
+      if(!res.ok) throw 0;
       return await res.json();
-    }catch(e){
-      console.warn('Using fallback queries:', e);
+    }catch{
       return FALLBACK;
     }
   }
@@ -109,20 +110,21 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
   async function initDb(){
     status.textContent='Loading DB…';
     try {
-      // Sanity check wasm path
-      const head = await fetch(SQL_WASM_PATH + 'sql-wasm.wasm', { method:'HEAD' });
-      if (!head.ok) throw new Error('wasm not found at ' + SQL_WASM_PATH + 'sql-wasm.wasm');
+      // sanity checks
+      const [jsHead, wasmHead] = await Promise.all([
+        fetch(SQL_LOADER_URL, {method:'HEAD'}).then(r=>r.status),
+        fetch(SQL_WASM_PATH + 'sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status),
+      ]);
+      if (jsHead !== 200) throw new Error('loader JS missing at ' + SQL_LOADER_URL);
+      if (wasmHead !== 200) throw new Error('wasm missing at ' + SQL_WASM_PATH + 'sql-wasm.wasm');
 
-      // Init sql.js with local wasm path
-      const init = await ensureInit();
-      const SQL = await init({ locateFile: f => SQL_WASM_PATH + f });
+      const initSqlJs = await getInitSqlJs();
+      const SQL = await initSqlJs({ locateFile: f => SQL_WASM_PATH + f });
 
-      // Fetch DB bytes
       const resp = await fetch(DB_URL, {cache:'no-store'});
       if (!resp.ok) throw new Error('db fetch failed: ' + resp.status);
       const buf = await resp.arrayBuffer();
 
-      // Open DB
       db = new SQL.Database(new Uint8Array(buf));
       status.textContent='Ready';
     } catch (e) {
@@ -179,7 +181,6 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     a.download='query.csv'; a.click(); URL.revokeObjectURL(a.href);
   }
 
-  // ---- boot ----
   (async ()=>{
     const qs = await loadQueries();
     fillPicker(qs);
@@ -196,4 +197,3 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     });
   })();
 </script>
-
