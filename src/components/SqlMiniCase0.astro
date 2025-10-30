@@ -1,5 +1,5 @@
 ---
-/* src/components/SqlMiniCase0.astro — minimal + stable SQL.js demo using local JS+WASM */
+/* src/components/SqlMiniCase0.astro — SQL.js demo using CDN-matched JS+WASM (v1.10.2) */
 ---
 <style>
   .card{max-width:960px;margin:1.25rem auto;padding:1rem;border:1px solid #e5e7eb;border-radius:12px}
@@ -34,12 +34,12 @@
   </div>
 </div>
 
-<!-- IMPORTANT: tell Astro not to bundle this public/ asset -->
-<script src="/vendor/sqljs/sql-wasm.js" is:inline></script>
+<!-- Use CDN loader (matches the CDN WASM) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
 
 <script type="module">
-  // Paths on YOUR site
-  const SQL_DIR = '/vendor/sqljs/';               // contains sql-wasm.wasm
+  // CDN base (keeps loader + wasm in sync)
+  const SQL_DIR = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/'; // must end with /
   const DB_URL  = '/data/cozymerc_deals.db';
   const Q_URL   = '/data/cozymerc_sql_queries.json';
 
@@ -47,11 +47,9 @@
   const picker=$('#picker'), txt=$('#sql'), runBtn=$('#run'), resetBtn=$('#reset'),
         csvBtn=$('#csv'), out=$('#out'), status=$('#status'), filter=$('#filter');
 
-  // Disable buttons until DB is ready
   const setButtons = on => { runBtn.disabled = resetBtn.disabled = csvBtn.disabled = !on; };
   setButtons(false);
 
-  // Fallback sample queries if JSON missing
   const FALLBACK = {
     "Top reps by deals & avg days":
 `SELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days
@@ -101,14 +99,14 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     status.textContent='Loading DB…';
     setButtons(false);
     try {
-      // Quick, clear existence checks
+      // Existence checks (CDN + your DB)
       const [js, wasm, dbh] = await Promise.all([
-        fetch('/vendor/sqljs/sql-wasm.js', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
-        fetch('/vendor/sqljs/sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
+        fetch(SQL_DIR + 'sql-wasm.js', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
+        fetch(SQL_DIR + 'sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
         fetch(DB_URL, {method:'HEAD'}).then(r=>r.status).catch(()=>0),
       ]);
-      if (js!==200)   throw new Error('Loader missing at /vendor/sqljs/sql-wasm.js');
-      if (wasm!==200) throw new Error('WASM missing at /vendor/sqljs/sql-wasm.wasm');
+      if (js!==200)   throw new Error('Loader missing at CDN');
+      if (wasm!==200) throw new Error('WASM missing at CDN');
       if (dbh!==200)  throw new Error('DB missing at ' + DB_URL);
 
       if (typeof window.initSqlJs !== 'function')
@@ -140,7 +138,8 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     values.forEach(row=>{
       if(term && !row.some(v => String(v??'').toLowerCase().includes(term))) return;
       const tr=document.createElement('tr');
-      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
+      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; }); // build row
+      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); }); // append
       tb.appendChild(tr);
     });
     tbl.appendChild(tb); out.appendChild(tbl);
@@ -185,7 +184,6 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     resetBtn.addEventListener('click', async ()=>{ setButtons(false); try{ db?.close(); }catch{} await initDb(); });
     csvBtn.addEventListener('click', downloadCSV);
     filter.addEventListener('input', ()=>{ if(last) render([last]); });
-
     txt.addEventListener('keydown', e=>{
       if((e.metaKey||e.ctrlKey) && e.key==='Enter'){ e.preventDefault(); if(!db){ status.textContent='Still initializing…'; return; } exec(txt.value); }
     });
