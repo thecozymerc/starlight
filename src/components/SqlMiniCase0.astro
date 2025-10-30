@@ -1,5 +1,5 @@
 ---
-/* Minimal, stable SQL.js demo: local loader + local wasm + clear errors */
+/* src/components/SqlMiniCase0.astro — minimal + stable SQL.js demo using local JS+WASM */
 ---
 <style>
   .card{max-width:960px;margin:1.25rem auto;padding:1rem;border:1px solid #e5e7eb;border-radius:12px}
@@ -34,11 +34,12 @@
   </div>
 </div>
 
-<!-- Synchronous loader from YOUR site; defines window.initSqlJs -->
-<script src="/vendor/sqljs/sql-wasm.js"></script>
+<!-- IMPORTANT: tell Astro not to bundle this public/ asset -->
+<script src="/vendor/sqljs/sql-wasm.js" is:inline></script>
 
 <script type="module">
-  const SQL_DIR = '/vendor/sqljs/';                // must contain sql-wasm.wasm
+  // Paths on YOUR site
+  const SQL_DIR = '/vendor/sqljs/';               // contains sql-wasm.wasm
   const DB_URL  = '/data/cozymerc_deals.db';
   const Q_URL   = '/data/cozymerc_sql_queries.json';
 
@@ -46,6 +47,11 @@
   const picker=$('#picker'), txt=$('#sql'), runBtn=$('#run'), resetBtn=$('#reset'),
         csvBtn=$('#csv'), out=$('#out'), status=$('#status'), filter=$('#filter');
 
+  // Disable buttons until DB is ready
+  const setButtons = on => { runBtn.disabled = resetBtn.disabled = csvBtn.disabled = !on; };
+  setButtons(false);
+
+  // Fallback sample queries if JSON missing
   const FALLBACK = {
     "Top reps by deals & avg days":
 `SELECT r.name AS rep, COUNT(*) AS deals, ROUND(AVG(days_to_close),1) AS avg_days
@@ -75,9 +81,6 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
 
   let db=null, last=null;
 
-  const setButtons = on => { runBtn.disabled = resetBtn.disabled = csvBtn.disabled = !on; };
-  setButtons(false);
-
   async function loadQueries(){
     try{
       const r = await fetch(Q_URL, {cache:'no-store'});
@@ -98,7 +101,7 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     status.textContent='Loading DB…';
     setButtons(false);
     try {
-      // sanity checks
+      // Quick, clear existence checks
       const [js, wasm, dbh] = await Promise.all([
         fetch('/vendor/sqljs/sql-wasm.js', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
         fetch('/vendor/sqljs/sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
