@@ -1,5 +1,5 @@
 ---
-/* src/components/SqlMiniCase0.astro — SQL.js demo using CDN-matched JS+WASM (v1.10.2) */
+/* src/components/SqlMiniCase0.astro — SQL.js demo with robust CDN loader (awaits onload) */
 ---
 <style>
   .card{max-width:960px;margin:1.25rem auto;padding:1rem;border:1px solid #e5e7eb;border-radius:12px}
@@ -34,12 +34,9 @@
   </div>
 </div>
 
-<!-- Use CDN loader (matches the CDN WASM) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
-
 <script type="module">
-  // CDN base (keeps loader + wasm in sync)
-  const SQL_DIR = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/'; // must end with /
+  // Use a matched CDN pair so JS + WASM versions are in sync.
+  const SQL_DIR = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/'; // MUST end with /
   const DB_URL  = '/data/cozymerc_deals.db';
   const Q_URL   = '/data/cozymerc_sql_queries.json';
 
@@ -79,6 +76,25 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
 
   let db=null, last=null;
 
+  async function ensureSqlJsLoader(){
+    // If already present, use it.
+    if (typeof window.initSqlJs === 'function') return;
+
+    // Dynamically add the loader and wait for onload to fire.
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = SQL_DIR + 'sql-wasm.js';
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load sql-wasm.js from CDN'));
+      document.head.appendChild(s);
+    });
+
+    if (typeof window.initSqlJs !== 'function') {
+      throw new Error('Loader loaded but window.initSqlJs is not a function');
+    }
+  }
+
   async function loadQueries(){
     try{
       const r = await fetch(Q_URL, {cache:'no-store'});
@@ -99,7 +115,7 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     status.textContent='Loading DB…';
     setButtons(false);
     try {
-      // Existence checks (CDN + your DB)
+      // Make sure loader + wasm + DB are reachable
       const [js, wasm, dbh] = await Promise.all([
         fetch(SQL_DIR + 'sql-wasm.js', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
         fetch(SQL_DIR + 'sql-wasm.wasm', {method:'HEAD'}).then(r=>r.status).catch(()=>0),
@@ -109,8 +125,8 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
       if (wasm!==200) throw new Error('WASM missing at CDN');
       if (dbh!==200)  throw new Error('DB missing at ' + DB_URL);
 
-      if (typeof window.initSqlJs !== 'function')
-        throw new Error('Loader loaded but window.initSqlJs is not a function');
+      // Load the loader and wait for the global to exist
+      await ensureSqlJsLoader();
 
       const SQL = await window.initSqlJs({ locateFile: f => SQL_DIR + f });
 
@@ -138,8 +154,7 @@ ORDER BY avg_days_open DESC, open_opps DESC;`
     values.forEach(row=>{
       if(term && !row.some(v => String(v??'').toLowerCase().includes(term))) return;
       const tr=document.createElement('tr');
-      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; }); // build row
-      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); }); // append
+      row.forEach(v=>{ const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
       tb.appendChild(tr);
     });
     tbl.appendChild(tb); out.appendChild(tbl);
